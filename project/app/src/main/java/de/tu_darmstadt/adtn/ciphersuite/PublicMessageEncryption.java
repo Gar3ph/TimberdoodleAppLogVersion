@@ -70,8 +70,8 @@ public class PublicMessageEncryption {
             //get the nonce for the cipher
             byte[] cipherIV = getCipherIV(iv);
             //encrypt the array
-            //cipher.doFinalOptimized(cipherIV, ((IGroupKey) key).getCipherKey(), plaintext, 0, resultbuffer, textOffset);
-            System.arraycopy(plaintext, 0, resultbuffer, textOffset, plaintext.length);
+            cipher.doFinalOptimized(cipherIV, ((IGroupKey) key).getCipherKey(), plaintext, 0, resultbuffer, textOffset);
+            //System.arraycopy(plaintext, 0, resultbuffer, textOffset, plaintext.length);
             //compute mac and write it into the array
             calcMAC.computeMAC(iv, ((IGroupKey) key).getMACKey(), resultbuffer, textOffset, resultbuffer, macOffset);
             //write iv into the array
