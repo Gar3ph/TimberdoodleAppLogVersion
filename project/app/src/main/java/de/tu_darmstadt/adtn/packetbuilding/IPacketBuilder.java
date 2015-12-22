@@ -1,7 +1,5 @@
 package de.tu_darmstadt.adtn.packetbuilding;
 
-import java.util.Collection;
-
 import javax.crypto.SecretKey;
 
 import de.tu_darmstadt.adtn.ciphersuite.IGroupCipher;
@@ -42,7 +40,7 @@ public interface IPacketBuilder {
      * @param keys    List of keys to use for encrypting the packet.
      * @return The packets created for the message.
      */
-    byte[][] createPackets(byte[] message, Collection<SecretKey> keys);
+    byte[][] createPackets(byte[] message, SecretKey[] keys);
 
     /**
      * Tries to decrypt and unpack a packet.
@@ -51,5 +49,5 @@ public interface IPacketBuilder {
      * @param keys   List of keys to use for trying to decrypt the packet.
      * @return The decrypted message on success or null otherwise.
      */
-    byte[] tryUnpackPacket(byte[] packet, Collection<SecretKey> keys);
+    byte[] tryUnpackPacket(byte[] packet, SecretKey[] keys);
 }

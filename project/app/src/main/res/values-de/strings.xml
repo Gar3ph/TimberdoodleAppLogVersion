@@ -112,6 +112,7 @@
     <string name="wrong_password">Das Passwort ist falsch.</string>
 
     <string name="auto_ibss">Ad-hoc-Netz erstellen</string>
+    <string name="auto_bluetooth">Bluetooth netzwerk erstellen \n(experimentell bzw. buggy)</string>
     <string name="help_0">Anzeige öffentlicher und privater Nachrichten.</string>
     <string name="help_1">Anzeige und Versenden öffentlicher Nachrichten. Ganze Nachricht durch kurzes Antippen anzeigen. Löschen durch gedrückt halten.</string>
     <string name="help_10">Zeigen Sie diesen QR-Code den Personen, die Sie in Ihre Kontaktliste für private Kommunikation aufnehmen wollen.</string>

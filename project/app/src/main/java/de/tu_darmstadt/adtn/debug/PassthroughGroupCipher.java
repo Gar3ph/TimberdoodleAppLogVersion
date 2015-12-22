@@ -1,7 +1,6 @@
 package de.tu_darmstadt.adtn.debug;
 
 import java.util.Arrays;
-import java.util.Collection;
 
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
@@ -34,7 +33,7 @@ public class PassthroughGroupCipher implements IGroupCipher {
     }
 
     @Override
-    public byte[][] encrypt(byte[] plaintext, Collection<SecretKey> keys) {
+    public byte[][] encrypt(byte[] plaintext, SecretKey[] keys) {
         if (plaintext.length != plaintextSize) {
             throw new RuntimeException("Size of plaintext is not as expected");
         }
@@ -45,7 +44,7 @@ public class PassthroughGroupCipher implements IGroupCipher {
         System.arraycopy(plaintext, 0, ciphertext, MAGIC_BYTES.length, plaintextSize);
 
         // Returns array of references to ciphertext
-        byte[][] clones = new byte[keys.size()][];
+        byte[][] clones = new byte[keys.length][];
         for (int i = 0; i < clones.length; ++i) {
             clones[i] = ciphertext;
         }
@@ -53,7 +52,7 @@ public class PassthroughGroupCipher implements IGroupCipher {
     }
 
     @Override
-    public byte[] tryDecrypt(byte[] ciphertext, Collection<SecretKey> keys) {
+    public byte[] tryDecrypt(byte[] ciphertext, SecretKey[] keys) {
         if (ciphertext.length != ciphertextSize) {
             throw new RuntimeException("Size of ciphertext is not as expected");
         }

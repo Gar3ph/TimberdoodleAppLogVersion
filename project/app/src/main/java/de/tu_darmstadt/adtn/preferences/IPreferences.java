@@ -21,7 +21,7 @@ public interface IPreferences extends de.tu_darmstadt.adtn.genericpreferences.IP
     void setSendingPoolBatchSize(int batchSize);
 
     // Auto-join ad-hoc network
-    boolean DEFAULT_AUTO_JOIN_AD_HOC_NETWORK = true;
+    boolean DEFAULT_AUTO_JOIN_AD_HOC_NETWORK = false;
     boolean getAutoJoinAdHocNetwork();
     void setAutoJoinAdHocNetwork(boolean autoJoin);
 
@@ -29,4 +29,9 @@ public interface IPreferences extends de.tu_darmstadt.adtn.genericpreferences.IP
     boolean DEFAULT_SHOW_HELP_BUTTONS = true;
     boolean getShowHelpButtons();
     void setShowHelpButtons(boolean showHelpButtons);
+
+    // Auto-start and -join bluetooth network
+    boolean DEFAULT_AUTO_BLUETOOTH = true;
+    boolean getAutoBluetooth();
+    void setAutoBluetooth(boolean autoStart);
 }

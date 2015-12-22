@@ -1,7 +1,5 @@
 package de.tu_darmstadt.adtn.ciphersuite;
 
-import java.util.Collection;
-
 import javax.crypto.SecretKey;
 
 /**
@@ -30,7 +28,7 @@ public interface IGroupCipher {
      * @param keys      Collection of SecretKeys that are used to encrypt the plaintext
      * @return Returns the cipher texts as array of array of byte.
      */
-    byte[][] encrypt(byte[] plaintext, Collection<SecretKey> keys);
+    byte[][] encrypt(byte[] plaintext, SecretKey[] keys);
 
     /**
      * Tries to decrypt a given cipher text and returns the plaintext on success.
@@ -41,7 +39,7 @@ public interface IGroupCipher {
      * @return Returns the decrypted cipher text as byte array. If there was no matching
      * key in the key list, null is returned.
      */
-    byte[] tryDecrypt(byte[] ciphertext, Collection<SecretKey> keys);
+    byte[] tryDecrypt(byte[] ciphertext, SecretKey[] keys);
 
     /**
      * Transforms an encoded key to a SecretKey.

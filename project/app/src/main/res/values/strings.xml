@@ -62,6 +62,7 @@
     <string name="interval_between">Interval between\nsending in seconds</string>
     <string name="refill_factor">Sending pool\nrefill threshold</string>
     <string name="auto_ibss">Auto-join ad-hoc</string>
+    <string name="auto_bluetooth">Use Bluetooth networking \n(experimental aka buggy)</string>
     <string name="settingsDialogTexts_0">Interval between sending in seconds.</string>
     <string name="settingsDialogTexts_1">Sending pool refill threshold.</string>
     <string name="settingsDialogTexts_2">Batch size.</string>

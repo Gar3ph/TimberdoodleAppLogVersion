@@ -158,8 +158,9 @@ public class SettingsActivity extends TimberdoodleActivity {
             }
         });
 
-        // Set up check box to enable/disable ad-hoc auto join
-        ToggleButton autoJoinAdhoc = (ToggleButton) findViewById(R.id.auto_join_adhoc_network);
+        // Set up check boxes to enable/disable ad-hoc auto join/Bluetooth/potential future networks
+        final ToggleButton autoJoinAdhoc = (ToggleButton) findViewById(R.id.auto_join_adhoc_network);
+        final ToggleButton autoBluetooth = (ToggleButton) findViewById(R.id.auto_bluetooth);
         autoJoinAdhoc.setChecked(netPrefs.getAutoJoinAdHocNetwork());
         autoJoinAdhoc.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
@@ -167,6 +168,24 @@ public class SettingsActivity extends TimberdoodleActivity {
                 netPrefs.edit();
                 netPrefs.setAutoJoinAdHocNetwork(isChecked);
                 netPrefs.commit();
+                netPrefs.edit();
+                netPrefs.setAutoBluetooth(!isChecked);
+                netPrefs.commit();
+                autoBluetooth.setChecked(netPrefs.getAutoBluetooth());
+            }
+        });
+
+        autoBluetooth.setChecked(netPrefs.getAutoBluetooth());
+        autoBluetooth.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener(){
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                netPrefs.edit();
+                netPrefs.setAutoBluetooth(isChecked);
+                netPrefs.commit();
+                netPrefs.edit();
+                netPrefs.setAutoJoinAdHocNetwork(!isChecked);
+                netPrefs.commit();
+                autoJoinAdhoc.setChecked(netPrefs.getAutoJoinAdHocNetwork());
             }
         });
     }

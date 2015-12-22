@@ -1,7 +1,8 @@
 package de.tu_darmstadt.adtn.packetbuilding;
 
+import android.util.Log;
+
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Random;
 
 import javax.crypto.SecretKey;
@@ -83,7 +84,7 @@ public class PacketBuilder implements IPacketBuilder {
      * @return The packets created for the message.
      */
     @Override
-    public byte[][] createPackets(byte[] message, Collection<SecretKey> keys) {
+    public byte[][] createPackets(byte[] message, SecretKey[] keys) {
         if (message.length > maxMessageSize) {
             throw new IllegalArgumentException("message is too large");
         }
@@ -106,13 +107,16 @@ public class PacketBuilder implements IPacketBuilder {
      * @return The decrypted message on success or null otherwise.
      */
     @Override
-    public byte[] tryUnpackPacket(byte[] packet, Collection<SecretKey> keys) {
+    public byte[] tryUnpackPacket(byte[] packet, SecretKey[] keys) {
+        Log.i("PacketBuilder", "Trying to unpack message");
         // Try to decrypt packet
         byte[] packedMessage = cipher.tryDecrypt(packet, keys);
 
         // Decryption failed with every key?
-        if (packedMessage == null) return null;
-
+        if (packedMessage == null) {
+            Log.i("PacketBuilder", "Could not decrypt message");
+            return null;
+        }
         // Remove header and padding
         int length = packedMessage[0] & 0xff | packedMessage[1] << 8 & 0xff00;
         if (length < 1 || length > maxMessageSize) return null; // Ignore malformed packets

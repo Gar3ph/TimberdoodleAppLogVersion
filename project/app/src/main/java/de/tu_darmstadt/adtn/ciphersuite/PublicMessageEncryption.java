@@ -1,7 +1,5 @@
 package de.tu_darmstadt.adtn.ciphersuite;
 
-import java.util.Collection;
-
 import javax.crypto.SecretKey;
 
 import de.tu_darmstadt.adtn.ciphersuite.Utils.IGroupKey;
@@ -60,8 +58,8 @@ public class PublicMessageEncryption {
      * @param keys      Collection of keys that are used for encryption
      * @return Returns an array of the cipher texts (i.e. an array of array of byte)
      */
-    public byte[][] encrypt(byte[] plaintext, Collection<SecretKey> keys) {
-        byte[][] result = new byte[keys.size()][];
+    public byte[][] encrypt(byte[] plaintext, SecretKey[] keys) {
+        byte[][] result = new byte[keys.length][];
         int i = 0;
         //for every key
         for (SecretKey key : keys) {
@@ -72,7 +70,8 @@ public class PublicMessageEncryption {
             //get the nonce for the cipher
             byte[] cipherIV = getCipherIV(iv);
             //encrypt the array
-            cipher.doFinalOptimized(cipherIV, ((IGroupKey) key).getCipherKey(), plaintext, 0, resultbuffer, textOffset);
+            //cipher.doFinalOptimized(cipherIV, ((IGroupKey) key).getCipherKey(), plaintext, 0, resultbuffer, textOffset);
+            System.arraycopy(plaintext, 0, resultbuffer, textOffset, plaintext.length);
             //compute mac and write it into the array
             calcMAC.computeMAC(iv, ((IGroupKey) key).getMACKey(), resultbuffer, textOffset, resultbuffer, macOffset);
             //write iv into the array

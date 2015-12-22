@@ -8,7 +8,6 @@ import android.widget.Toast;
 import de.tu_darmstadt.adtn.Utilities;
 import de.tu_darmstadt.adtn.ui.passworddialog.PasswordDialog;
 import de.tu_darmstadt.timberdoodle.IService;
-import de.tu_darmstadt.timberdoodle.LocationPrivacy;
 import de.tu_darmstadt.timberdoodle.R;
 import de.tu_darmstadt.timberdoodle.ui.PrivateKeyStorePasswordDialog;
 import de.tu_darmstadt.timberdoodle.ui.TabsPagerAdapter;
@@ -41,9 +40,9 @@ public class MessagingActivity extends TimberdoodleActivity {
             @Override
             public void onDone() {
                 // Start networking on privacy mode
-                if (LocationPrivacy.isEnabled(MessagingActivity.this)) {
+                //if (LocationPrivacy.isEnabled(MessagingActivity.this)) {
                     service.getAdtnService().startNetworking();
-                }
+                //}
 
                 // Show messaging fragments in ViewPager
                 ViewPager vpPager = (ViewPager) findViewById(R.id.vpPager);

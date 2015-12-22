@@ -77,4 +77,18 @@ public class Preferences extends de.tu_darmstadt.adtn.genericpreferences.Prefere
     public void setShowHelpButtons(boolean showHelpButtons) {
         getEditor().putBoolean(PREFKEY_SHOW_HELP_BUTTONS, showHelpButtons);
     }
+
+    // Bluetooth settings
+
+    private final static String PREFKEY_AUTO_BLUETOOTH = "AutoBluetooth";
+
+    @Override
+    public void setAutoBluetooth(boolean autoStart) {
+        getEditor().putBoolean(PREFKEY_AUTO_BLUETOOTH, autoStart);
+    }
+
+    @Override
+    public boolean getAutoBluetooth() {
+        return getPrefs().getBoolean(PREFKEY_AUTO_BLUETOOTH, DEFAULT_AUTO_BLUETOOTH);
+    }
 }

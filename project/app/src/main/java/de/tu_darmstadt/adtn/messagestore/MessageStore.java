@@ -5,7 +5,9 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.database.sqlite.SQLiteStatement;
+import android.util.Log;
 
+import java.io.UnsupportedEncodingException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
@@ -110,6 +112,13 @@ public class MessageStore extends SQLiteOpenHelper implements IMessageStore {
      */
     @Override
     public void addMessage(byte[] message) {
+        String string = "";
+        try {
+            string = new String(message, "UTF-8");
+        } catch (UnsupportedEncodingException e) {
+
+        }
+        Log.i("MessageStore", "I'll put " + string + " into the store");
         sqlInsertMessage.bindBlob(1, calculateFingerprint(message));
         sqlInsertMessage.bindBlob(2, message);
         sqlInsertMessage.executeInsert();
@@ -126,7 +135,6 @@ public class MessageStore extends SQLiteOpenHelper implements IMessageStore {
     public boolean receivedMessage(byte[] message) {
         byte[] fingerprint = calculateFingerprint(message);
         long time = System.currentTimeMillis();
-
         // Try to update stats of existing message
         sqlUpdateReceiveStats.bindBlob(1, fingerprint);
         sqlUpdateReceiveStats.bindLong(2, time);
@@ -183,6 +191,12 @@ public class MessageStore extends SQLiteOpenHelper implements IMessageStore {
         Message[] messages = new Message[cursor.getCount()];
         for (int i = 0; cursor.moveToNext(); ++i) {
             messages[i] = new Message(cursor.getBlob(0), cursor.getBlob(1));
+            // SelectLogger.getInstance().log(messages[i].getContent());
+            try {
+                Log.i("MessageStore", "Chose " + new String(messages[i].getContent(), "UTF-8") + " from message store");
+            } catch (UnsupportedEncodingException e) {
+
+            }
         }
         cursor.close();
         return messages;

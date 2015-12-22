@@ -1,12 +1,11 @@
 package de.tu_darmstadt.adtn.ciphersuite;
 
-import java.util.Collection;
-
 import javax.crypto.SecretKey;
 
 import de.tu_darmstadt.adtn.ciphersuite.Utils.GroupKey;
 import de.tu_darmstadt.adtn.ciphersuite.ciphers.IPublicMessageCipher;
 import de.tu_darmstadt.adtn.ciphersuite.hashes.IComputeMAC;
+import de.tu_darmstadt.adtn.logging.loggers.ReceiveLogger;
 
 /**
  * Tries to decrypt a byte array with a given list of keys.
@@ -79,7 +78,7 @@ public class PublicMessageDecryption {
      * the actual payload
      * @throws Exception
      */
-    public byte[] decrypt(byte[] ciphertext, Collection<SecretKey> keys) {
+    public byte[] decrypt(byte[] ciphertext, SecretKey[] keys) {
         byte[] result = null;
         byte[] mac = new byte[calcMAC.length()];
         byte[] iv = new byte[nonceLength];
@@ -96,8 +95,11 @@ public class PublicMessageDecryption {
                 byte[] cipherIV = getCipherIV(iv);
                 //decrypt the packet
                 cipher.doFinalOptimized(cipherIV, ((GroupKey) key).getCipherKey(), ciphertext, textOffset, result, 0);
+                //System.arraycopy(ciphertext, textOffset, result, 0, result.length);
+                ReceiveLogger.getInstance().log(result, key.getEncoded());
                 break;
             }
+
         }
         return result;
     }

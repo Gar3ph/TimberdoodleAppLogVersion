@@ -1,5 +1,8 @@
 package de.tu_darmstadt.adtn.sendingpool;
 
+import android.util.Log;
+
+import java.io.UnsupportedEncodingException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -11,6 +14,8 @@ import javax.crypto.SecretKey;
 import de.tu_darmstadt.adtn.AdtnSocketException;
 import de.tu_darmstadt.adtn.ISocket;
 import de.tu_darmstadt.adtn.groupkeystore.IGroupKeyStore;
+import de.tu_darmstadt.adtn.logging.loggers.SelectLogger;
+import de.tu_darmstadt.adtn.logging.loggers.SendLogger;
 import de.tu_darmstadt.adtn.messagestore.IMessageStore;
 import de.tu_darmstadt.adtn.messagestore.Message;
 import de.tu_darmstadt.adtn.packetbuilding.IPacketBuilder;
@@ -73,8 +78,8 @@ public class SendingPool implements ISendingPool {
                     try {
                         long millis = System.currentTimeMillis();
                         refill(); // Fetch messages from store
-                        if (!sendBatch()) break; // Send the messages
-
+                        //if (!sendBatch()) break; // Send the messages
+                        sendBatch();
                         // Wait between sending of two batches
                         long wait = sendInterval * 1000 - (System.currentTimeMillis() - millis);
                         if (wait > 0) {
@@ -121,19 +126,31 @@ public class SendingPool implements ISendingPool {
 
     // Wraps messages from the message store in packets and adds them to the sending pool
     private void refill() {
+        Log.i("SendingPool", "Refill was invoked");
         // No need to refill?
-        if (entries.size() >= refillThreshold) return;
-
+        //if (entries.size() >= refillThreshold) return;
+        if (entries.size() >= 1) return;
         // Calculate how many messages are needed to reach threshold
         Collection<SecretKey> keys = groupKeyStore.getKeys();
+        SecretKey[] keyArray = new SecretKey[keys.size()];
+        keys.toArray(keyArray);
         int numKeys = keys.size();
         if (numKeys == 0) return; // Cannot create any packets without keys
-        int numMessages = (refillThreshold - entries.size() + numKeys - 1) / numKeys;
-
+        //int numMessages = (refillThreshold - entries.size() + numKeys - 1) / numKeys;
+        int numMessages = 1;
+        int i = 0;
         // Wrap messages in packets so they are ready to send and store them in pool
         for (Message message : messageStore.getNextMessagesToSend(numMessages)) {
-            for (byte[] packet : packetBuilder.createPackets(message.getContent(), keys)) {
-                entries.add(new SendingPoolEntry(packet, message.getID()));
+            i = 0;
+            SelectLogger.getInstance().log(message.getContent());
+            for (byte[] packet : packetBuilder.createPackets(message.getContent(), keyArray)) {
+                entries.add(new SendingPoolEntry(packet, message.getID(), keyArray[i].getEncoded()));
+                i++;
+                try {
+                    Log.i("SendingPool", "Got " + new String(message.getContent(), "UTF-8"));
+                } catch (UnsupportedEncodingException e) {
+
+                }
             }
         }
     }
@@ -143,17 +160,22 @@ public class SendingPool implements ISendingPool {
      * Returns true on success or false if sending failed. */
     private boolean sendBatch() {
         SendingPoolEntry[] batch = new SendingPoolEntry[batchSize];
-
+        //SendingPoolEntry[] batch = new SendingPoolEntry[1];
         // Move as much pool entries to batch as possible
         int i;
         for (i = 0; i < batch.length && !entries.isEmpty(); ++i) {
             batch[i] = entries.remove(random.nextInt(entries.size()));
         }
+        int j = 0;
+        while(j < batch.length && batch[j] != null)
+            j++;
+        i = j;
 
         // Fill batch with random data packets if there are no more entries in pool
         if (i < batch.length) {
             while (i < batch.length) {
-                batch[i] = new SendingPoolEntry(packetBuilder.createRandomPacket(), null);
+                batch[i] = new SendingPoolEntry(packetBuilder.createRandomPacket(), null, null);
+                //batch[i] = new SendingPoolEntry(new byte[ProtocolConstants.MAX_PACKET_SIZE], null, 0);
                 ++i;
             }
 
@@ -166,8 +188,11 @@ public class SendingPool implements ISendingPool {
             // Try to send the packet
             try {
                 socket.send(entry.getPacket(), 0);
+                if(entry.getUsedKey() != null)
+                    SendLogger.getInstance().log(entry.getMessageID(), entry.getUsedKey());
             } catch (AdtnSocketException e) {
-                onSendingErrorListener.onSendingError(e);
+                if(!e.getMessage().equals("Network not ready yet"))
+                    onSendingErrorListener.onSendingError(e);
                 return false;
             }
 

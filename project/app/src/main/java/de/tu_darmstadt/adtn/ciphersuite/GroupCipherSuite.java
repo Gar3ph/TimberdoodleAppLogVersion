@@ -1,7 +1,5 @@
 package de.tu_darmstadt.adtn.ciphersuite;
 
-import java.util.Collection;
-
 import javax.crypto.SecretKey;
 
 import de.tu_darmstadt.adtn.ciphersuite.Utils.GroupKeyGenerator;
@@ -89,7 +87,7 @@ public class GroupCipherSuite implements IGroupCipher {
      * @return Returns the cipher texts as array of array of byte.
      */
     @Override
-    public byte[][] encrypt(byte[] plaintext, Collection<SecretKey> keys) {
+    public byte[][] encrypt(byte[] plaintext, SecretKey[] keys) {
         return encryptor.encrypt(plaintext, keys);
     }
 
@@ -103,7 +101,7 @@ public class GroupCipherSuite implements IGroupCipher {
      * key in the key collection, null is returned.
      */
     @Override
-    public byte[] tryDecrypt(byte[] ciphertext, Collection<SecretKey> keys) {
+    public byte[] tryDecrypt(byte[] ciphertext, SecretKey[] keys) {
         return decryptor.decrypt(ciphertext, keys);
     }
 

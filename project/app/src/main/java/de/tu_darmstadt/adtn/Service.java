@@ -1,13 +1,22 @@
 package de.tu_darmstadt.adtn;
 
+import android.content.ComponentName;
+import android.content.Context;
 import android.content.Intent;
+import android.content.ServiceConnection;
 import android.os.Binder;
 import android.os.IBinder;
 import android.support.v4.content.LocalBroadcastManager;
+import android.telephony.TelephonyManager;
+import android.util.Log;
 
+import java.io.UnsupportedEncodingException;
 import java.security.UnrecoverableKeyException;
 import java.util.Arrays;
 
+import javax.crypto.SecretKey;
+
+import bluetoothlibrary.network.BTNetworkService;
 import de.tu_darmstadt.adtn.ciphersuite.GroupCipherSuite;
 import de.tu_darmstadt.adtn.ciphersuite.IGroupCipher;
 import de.tu_darmstadt.adtn.errorlogger.ErrorLoggingSingleton;
@@ -15,6 +24,10 @@ import de.tu_darmstadt.adtn.groupkeyshareexpirationmanager.GroupKeyShareExpirati
 import de.tu_darmstadt.adtn.groupkeyshareexpirationmanager.IGroupKeyShareExpirationManager;
 import de.tu_darmstadt.adtn.groupkeystore.GroupKeyStore;
 import de.tu_darmstadt.adtn.groupkeystore.IGroupKeyStore;
+import de.tu_darmstadt.adtn.logging.loggers.CreateLogger;
+import de.tu_darmstadt.adtn.logging.loggers.ReceiveLogger;
+import de.tu_darmstadt.adtn.logging.loggers.SelectLogger;
+import de.tu_darmstadt.adtn.logging.loggers.SendLogger;
 import de.tu_darmstadt.adtn.messagestore.IMessageStore;
 import de.tu_darmstadt.adtn.messagestore.MessageStore;
 import de.tu_darmstadt.adtn.packetbuilding.IPacketBuilder;
@@ -58,6 +71,11 @@ public class Service extends android.app.Service implements IService {
 
     //endregion
 
+    private CreateLogger create = CreateLogger.getInstance();
+    private ReceiveLogger receive = ReceiveLogger.getInstance();
+    private SelectLogger select = SelectLogger.getInstance();
+    private SendLogger send = SendLogger.getInstance();
+
     private IPreferences preferences;
 
     // Sending and receiving
@@ -91,11 +109,42 @@ public class Service extends android.app.Service implements IService {
     // Keeps the ad-hoc network alive
     private IbssNetwork ibssNetwork;
 
+    private final String TAG = "adtnService";
+    // Bluetooth service
+    private BTNetworkService nService;
+
+    private final ServiceConnection connection = new ServiceConnection() {
+        @Override
+        public void onServiceConnected(ComponentName name, IBinder service) {
+            BTNetworkService.LocalBinder binder = (BTNetworkService.LocalBinder) service;
+            Service.this.nService = (BTNetworkService)binder.getService();
+            Log.i(TAG, "Service was connected");
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName name) {
+            Service.this.nService = null;
+            Log.i(TAG, "Service connection lost/not established");
+        }
+    };
+
+    /**
+     * Binds to the Timberdoodle service.
+     *
+     * @param serviceConnection The service connection to use in the call to bindService.
+     */
+    public void bindBTService(ServiceConnection serviceConnection) {
+        if (!bindService(new Intent(this, BTNetworkService.class), serviceConnection, Context.BIND_AUTO_CREATE)) {
+            throw new RuntimeException("Could not bind to service");
+        }
+    }
+
     @Override
     public void onCreate() {
         super.onCreate();
+        bindBTService(connection);
 
-        // Set context for the error logger.
+        // Initialise logger
         ErrorLoggingSingleton.getInstance().setContext(getApplicationContext());
 
         // Set up networking status
@@ -117,11 +166,22 @@ public class Service extends android.app.Service implements IService {
 
         // Create group key share expiration manager
         expirationManager = new GroupKeyShareExpirationManager(this, GROUP_KEY_SHARE_EXPIRATION_INTERVAL);
+
+        byte[] key;
+        TelephonyManager tm = (TelephonyManager)this.getSystemService(Context.TELEPHONY_SERVICE);
+        if (tm != null) {
+            key = tm.getDeviceId().getBytes();
+            create.setUserID(key);
+            receive.getInstance().setUserID(key);
+            select.getInstance().setUserID(key);
+            send.getInstance().setUserID(key);
+        }
     }
 
     @Override
     public void onDestroy() {
         // Do cleanup in reverse order
+        Log.i(TAG, "onDestroy in adtnService was invoked");
         stopNetworking(null, false);
         expirationManager.store();
         IGroupKeyStore keyStore = getGroupKeyStore();
@@ -136,6 +196,7 @@ public class Service extends android.app.Service implements IService {
      */
     @Override
     public void startNetworking() {
+        Log.i(TAG, "startNetworking was invoked on adtn service");
         synchronized (networkingStartStopLock) {
             // Do nothing if already started
             if (networkingStatus.getStatus() == NetworkingStatus.STATUS_ENABLED) return;
@@ -146,31 +207,46 @@ public class Service extends android.app.Service implements IService {
                 return;
             }
 
-            // Try to spoof MAC address
-            MacSpoofing.trySetRandomMac();
-
             // Keep running in background
             startService(new Intent(this, Service.class));
 
-            // Enable ad-hoc auto-connect and set up preference listener
-            ibssNetwork = new IbssNetwork(this);
-            if (preferences.getAutoJoinAdHocNetwork()) ibssNetwork.start();
-            preferences.addOnCommitListenerListener(new de.tu_darmstadt.adtn.genericpreferences.IPreferences.OnCommitListener() {
-                @Override
-                public void onCommit() {
-                    if (preferences.getAutoJoinAdHocNetwork()) {
-                        ibssNetwork.start();
-                    } else {
-                        ibssNetwork.stop();
+            if(preferences.getAutoJoinAdHocNetwork()) {
+                // Try to spoof MAC address
+                MacSpoofing.trySetRandomMac();
+                // Enable ad-hoc auto-connect and set up preference listener
+                ibssNetwork = new IbssNetwork(this);
+                if (preferences.getAutoJoinAdHocNetwork()) ibssNetwork.start();
+                preferences.addOnCommitListenerListener(new de.tu_darmstadt.adtn.genericpreferences.IPreferences.OnCommitListener() {
+                    @Override
+                    public void onCommit() {
+                        if (preferences.getAutoJoinAdHocNetwork()) {
+                            ibssNetwork.start();
+                        } else {
+                            ibssNetwork.stop();
+                        }
                     }
-                }
-            });
+                });
 
-            // Create socket, message store and sending pool
-            socket = new PacketSocket(this, "wlan0", 0xD948,
-                    new byte[]{(byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff},
-                    new byte[]{(byte) 0x00, (byte) 0x41, (byte) 0xAC, (byte) 0xC2, (byte) 0x96, (byte) 0xC6},
-                    packetBuilder.getEncryptedPacketSize());
+                // Create socket, message store and sending pool
+                socket = new PacketSocket(this, "wlan0", 0xD948,
+                        new byte[]{(byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff},
+                        new byte[]{(byte) 0x00, (byte) 0x41, (byte) 0xAC, (byte) 0xC2, (byte) 0x96, (byte) 0xC6},
+                        packetBuilder.getEncryptedPacketSize());
+            } else if(preferences.getAutoBluetooth()){
+                Log.i(TAG, "adtnService tries to start networking in bluetooth service");
+                nService.startNetworking();
+                Log.i(TAG, "adtnService started networking");
+                preferences.addOnCommitListenerListener(new de.tu_darmstadt.adtn.genericpreferences.IPreferences.OnCommitListener() {
+                    @Override
+                    public void onCommit() {
+                        if (preferences.getAutoBluetooth())
+                            nService.startNetworking();
+                        else
+                            nService.stopNetworking();
+                    }
+                });
+                socket = nService.getSocket();
+            }
             sendingPool = new SendingPool(preferences, socket, messageStore, packetBuilder,
                     groupKeyStore, new ISendingPool.OnSendingErrorListener() {
                 @Override
@@ -278,6 +354,11 @@ public class Service extends android.app.Service implements IService {
      */
     @Override
     public void sendMessage(byte header, byte[] content) {
+        try {
+            Log.i(TAG, "A message was authored and passed to the adtn service. The message is: " + new String(content, "UTF-8") );
+        } catch (UnsupportedEncodingException e) {
+
+        }
         if (content.length > ProtocolConstants.MAX_MESSAGE_CONTENT_SIZE) {
             throw new RuntimeException("Content size exceeds maximum allowed size");
         }
@@ -287,6 +368,7 @@ public class Service extends android.app.Service implements IService {
         message[0] = header;
         System.arraycopy(content, 0, message, 1, content.length);
         messageStore.addMessage(message);
+        CreateLogger.getInstance().log(message);
     }
 
     /* Thread function to continuously receive messages, put them in the message store and send
@@ -295,19 +377,21 @@ public class Service extends android.app.Service implements IService {
         byte[] receiveBuffer = new byte[packetBuilder.getEncryptedPacketSize()];
 
         while (true) {
-            // Received encrypted packet
+            // Receive encrypted packet
             try {
                 socket.receive(receiveBuffer, 0);
-            } catch (AdtnSocketException e) {
+                Thread.sleep(10000);
+            } catch (AdtnSocketException|InterruptedException e) {
                 // receive() fails if networking is stopping or if an actual error occurred
-                if (!stopReceiving) {
+                if (stopReceiving) {
                     stopNetworking(getString(R.string.receiving_error) + e.getLocalizedMessage(), true);
                 }
                 break;
             }
-
+            Log.i(TAG, "Message reached adtn service");
             // Try to decrypt. Skip if not possible.
-            byte[] unpacked = packetBuilder.tryUnpackPacket(receiveBuffer, groupKeyStore.getKeys());
+            SecretKey[] keys = new SecretKey[groupKeyStore.getKeys().size()];
+            byte[] unpacked = packetBuilder.tryUnpackPacket(receiveBuffer, groupKeyStore.getKeys().toArray(keys));
             if (unpacked == null) continue;
 
             // Ignore if already received

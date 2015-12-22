@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.content.ServiceConnection;
 import android.os.Binder;
 import android.os.IBinder;
+import android.util.Log;
 
 import java.security.KeyPair;
 import java.security.UnrecoverableKeyException;
@@ -135,7 +136,6 @@ public class Service extends android.app.Service implements IService {
         // Create friend cipher, friend key store and key store for own public/private key pair
         friendCipher = new FriendCipher();
         friendKeyStore = new FriendKeyStore(this, friendCipher);
-
         // Create chat log and message arrival notification
         chatLog = new ChatLog(this);
         messageArrivalNotification = new MessageArrivalNotification(this, chatLog);
@@ -238,6 +238,7 @@ public class Service extends android.app.Service implements IService {
     @Override
     public boolean openPrivateKeyStore(String password) {
         try {
+            Log.i("timber service", "openPrivateKeyStore was invoked");
             synchronized (privateKeyStoreLock) {
                 // Do nothing if already loaded
                 if (privateKeyStore != null) return true;
@@ -246,7 +247,10 @@ public class Service extends android.app.Service implements IService {
 
                 // Configure friend cipher with private key
                 KeyPair keyPair = privateKeyStore.getKeyPair();
-                if (keyPair != null) friendCipher.setPrivateKey(keyPair.getPrivate());
+                if (keyPair != null) {
+                    friendCipher.setPrivateKey(keyPair.getPrivate());
+                    //((de.tu_darmstadt.adtn.Service)adtnService).initLoggers(keyPair.getPublic().getEncoded());
+                }
             }
         } catch (UnrecoverableKeyException e) {
             return false;
