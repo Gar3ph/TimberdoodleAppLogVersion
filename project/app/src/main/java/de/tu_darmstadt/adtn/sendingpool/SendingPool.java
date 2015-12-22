@@ -14,8 +14,6 @@ import javax.crypto.SecretKey;
 import de.tu_darmstadt.adtn.AdtnSocketException;
 import de.tu_darmstadt.adtn.ISocket;
 import de.tu_darmstadt.adtn.groupkeystore.IGroupKeyStore;
-import de.tu_darmstadt.adtn.logging.loggers.SelectLogger;
-import de.tu_darmstadt.adtn.logging.loggers.SendLogger;
 import de.tu_darmstadt.adtn.messagestore.IMessageStore;
 import de.tu_darmstadt.adtn.messagestore.Message;
 import de.tu_darmstadt.adtn.packetbuilding.IPacketBuilder;

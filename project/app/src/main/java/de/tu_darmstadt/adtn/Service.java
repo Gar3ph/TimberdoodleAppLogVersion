@@ -26,8 +26,6 @@ import de.tu_darmstadt.adtn.groupkeystore.GroupKeyStore;
 import de.tu_darmstadt.adtn.groupkeystore.IGroupKeyStore;
 import de.tu_darmstadt.adtn.logging.loggers.CreateLogger;
 import de.tu_darmstadt.adtn.logging.loggers.ReceiveLogger;
-import de.tu_darmstadt.adtn.logging.loggers.SelectLogger;
-import de.tu_darmstadt.adtn.logging.loggers.SendLogger;
 import de.tu_darmstadt.adtn.messagestore.IMessageStore;
 import de.tu_darmstadt.adtn.messagestore.MessageStore;
 import de.tu_darmstadt.adtn.packetbuilding.IPacketBuilder;
